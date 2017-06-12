@@ -46,8 +46,6 @@ namespace Git_Ignore_Editor {
 		private Font m_FontStrikeOut;
 		private Font m_FontNormal;
 
-
-
 		private string[] m_GitIgnore;
 
 		public Form1() {
@@ -102,7 +100,9 @@ namespace Git_Ignore_Editor {
 			addFiles(m_Base);
 
 			//check git ignore
+			runThroughGit(m_Base);
 			//run through strikeout
+			updateTreeExclude(m_Base);
 		}
 
 		private void addFolders(FileFolderHolder a_Node) {
@@ -176,7 +176,7 @@ namespace Git_Ignore_Editor {
 		private bool isParentExcluded(FileFolderHolder a_Ffh) {
 			FileFolderHolder parent = a_Ffh.parent;
 
-			while(parent != null) {
+			while (parent != null) {
 				if (parent.isExcluded) {
 					return true;
 				}
@@ -187,6 +187,51 @@ namespace Git_Ignore_Editor {
 		}
 
 
+		private void runThroughGit(FileFolderHolder a_Ffh) {
+			for (int i = 0; i < a_Ffh.children.Count; i++) {
+				FileFolderHolder current = a_Ffh.children[i];
+
+				if (isParentExcluded(current)) {
+					current.isExcluded = true;
+				} else {
+
+					string prefix;
+					if (current.isFile) {
+						prefix = "";
+					} else {
+						prefix = "/";
+					}
+					string dir = prefix + current.relativePath.Replace('\\', '/');
+
+					dir = dir.Remove(dir.Length - 1);
+
+					if (!isFileAllowed(dir)) {
+						current.isExcluded = true;
+					}
+				}
+
+				if (!current.isFile) {
+					runThroughGit(current);
+				}
+			}
+		}
+
+		private void updateTreeExclude(FileFolderHolder a_Ffh) {
+			for (int i = 0; i < a_Ffh.children.Count; i++) {
+				FileFolderHolder current = a_Ffh.children[i];
+
+				if (current.isExcluded) {
+					current.node.NodeFont = m_FontStrikeOut;
+				} else {
+					current.node.NodeFont = m_FontNormal;
+				}
+
+				if (!current.isFile) {
+					updateTreeExclude(current);
+				}
+			}
+		}
+
 		/// <summary>
 		/// checks the git ignore file to see if we should use the file
 		/// </summary>
@@ -194,7 +239,10 @@ namespace Git_Ignore_Editor {
 		/// <returns>is the file allowed to be added</returns>
 		private bool isFileAllowed(string a_FileDir) {
 			for (int i = 0; i < m_GitIgnore.Length; i++) {
-				if (LikeOperator.LikeString(a_FileDir, m_GitIgnore[i], CompareMethod.Binary)) {
+				if(m_GitIgnore[i].Length <= 2) {
+					continue;
+				}
+				if (LikeOperator.LikeString(a_FileDir,"*" + m_GitIgnore[i], CompareMethod.Binary)) {
 					return false;
 				}
 			}
