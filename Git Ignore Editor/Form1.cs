@@ -82,6 +82,14 @@ namespace Git_Ignore_Editor {
 					return;
 				}
 
+				for(int i = 0; i < m_GitIgnore.Length; i++) {
+					if (m_GitIgnore[i].Length >= 2) {
+						if (m_GitIgnore[i][0] == '/') {
+							m_GitIgnore[i] = m_GitIgnore[i].Remove(0, 1);
+						}
+					}
+				}
+
 				setUpFolderList();
 
 				//addFolders("", null);
@@ -199,11 +207,19 @@ namespace Git_Ignore_Editor {
 					if (current.isFile) {
 						prefix = "";
 					} else {
-						prefix = "/";
+						prefix = "";
+					}
+					string suffix;
+					if (current.isFile) {
+						suffix = "";
+					} else {
+						suffix = "/";
 					}
 					string dir = prefix + current.relativePath.Replace('\\', '/');
 
 					dir = dir.Remove(dir.Length - 1);
+
+					dir += suffix;
 
 					if (!isFileAllowed(dir)) {
 						current.isExcluded = true;
@@ -242,7 +258,7 @@ namespace Git_Ignore_Editor {
 				if(m_GitIgnore[i].Length <= 2) {
 					continue;
 				}
-				if (LikeOperator.LikeString(a_FileDir,"*" + m_GitIgnore[i], CompareMethod.Binary)) {
+				if (LikeOperator.LikeString(a_FileDir,"*" + m_GitIgnore[i] + "*", CompareMethod.Binary)) {
 					return false;
 				}
 			}
