@@ -11,10 +11,38 @@ namespace Git_Ignore_Editor {
 	/// </summary>
 	class GitIgnoreLine {
 
-		public GitIgnoreLine(string a_Base, int a_Line) {
-			m_LineIndex = a_Line;
-			m_BaseLine = a_Base;
-			m_Line = a_Base.Replace('\\', '/');
+				/// <summary>
+		/// the line as it appears in the .gitignore
+		/// </summary>
+		public string m_BaseLine;
+		/// <summary>
+		/// modified version of the baseLine, removes some information
+		/// </summary>
+		public string m_Line;
+
+		/// <summary>
+		/// index of this line in the gitIgnore file
+		/// </summary>
+		public int m_LineIndex = 0;
+
+		/// <summary>
+		/// types of line each line can be
+		/// </summary>
+		public enum LineType {
+			Ignore,
+			Allow,
+			Comment,
+			Empty
+		}
+
+		/// <summary>
+		/// which type is this line
+		/// </summary>
+		public LineType m_Type;
+
+		public void setLine(string a_Line) {
+			m_BaseLine = a_Line;
+			m_Line = a_Line.Replace('\\', '/');
 
 			bool startsWithHash = false;
 			bool onlySpaces = true;
@@ -80,34 +108,5 @@ namespace Git_Ignore_Editor {
 			}
 
 		}
-
-		/// <summary>
-		/// the line as it appears in the .gitignore
-		/// </summary>
-		public string m_BaseLine;
-		/// <summary>
-		/// modified version of the baseLine, removes some information
-		/// </summary>
-		public string m_Line;
-
-		/// <summary>
-		/// index of this line in the gitIgnore file
-		/// </summary>
-		public int m_LineIndex = 0;
-
-		/// <summary>
-		/// types of line each line can be
-		/// </summary>
-		public enum LineType {
-			Ignore,
-			Allow,
-			Comment,
-			Empty
-		}
-
-		/// <summary>
-		/// which type is this line
-		/// </summary>
-		public LineType m_Type;
 	}
 }

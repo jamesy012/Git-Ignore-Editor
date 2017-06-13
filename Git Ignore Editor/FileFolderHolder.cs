@@ -21,5 +21,14 @@ namespace Git_Ignore_Editor {
 		public List<FileFolderHolder> m_Children;
 
 		public List<GitIgnoreLine> m_Effects;
+
+		public GitIgnoreLine getLastLineOfEffect() {
+			if(m_Effects == null) {
+				return null;
+			}
+
+			return m_Effects[m_Effects.Count - 1];
+
+		}
 	}
 }

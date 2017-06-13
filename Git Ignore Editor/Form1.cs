@@ -38,6 +38,11 @@ namespace Git_Ignore_Editor {
 		private FolderSelectDialog m_FolderSelect = new FolderSelectDialog();
 
 		/// <summary>
+		/// form for the line edit
+		/// </summary>
+		private GitLineEditForm m_GitLineEditForm;
+
+		/// <summary>
 		/// normal/default font for the TreeView
 		/// </summary>
 		private Font m_FontNormal;
@@ -69,7 +74,7 @@ namespace Git_Ignore_Editor {
 		/// list of all the lines in the gitIgnore
 		/// (might have to change to list??)
 		/// </summary>
-		private GitIgnoreLine[] m_GitLines;
+		private List<GitIgnoreLine> m_GitLines;
 
 		/// <summary>
 		/// when removing other selected form ListBox's it calls the SelectedIndexChanges, this is a bool that is run first to prevent that
@@ -81,67 +86,53 @@ namespace Git_Ignore_Editor {
 			//ofofd.AcceptFiles = false;
 			//ofofd.RootFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-			TreeNode node = treeView1.Nodes.Add("test");
+			m_GitLineEditForm = new GitLineEditForm(this);
+
+			TreeNode node = TreeViewFolders.Nodes.Add("test");
 			node.Nodes.Add("test1");
-			treeView1.Nodes.Add("test2");
+			TreeViewFolders.Nodes.Add("test2");
 			node.Text = "Example";
 			node.Expand();
 
 			Info_FileName.Text = Info_Path.Text = Info_RelPath.Text = "";
 
-			m_FontNormal = new Font(treeView1.Font, FontStyle.Regular);
-			m_FontStrikeOut = new Font(treeView1.Font, FontStyle.Strikeout);
+			m_FontNormal = new Font(TreeViewFolders.Font, FontStyle.Regular);
+			m_FontStrikeOut = new Font(TreeViewFolders.Font, FontStyle.Strikeout);
 
 			GitIgnore_Contents.Items.Add("Git Ignore File appears here");
 
 		}
 
-		private void button1_Click(object sender, EventArgs e) {
-			//folderBrowserDialog1.ShowDialog();
-			bool dr = m_FolderSelect.ShowDialog();
-			if (dr) {
-				m_Base = null;
-				treeView1.Nodes.Clear();
-				GitIgnore_Contents.Items.Clear();
+		private bool loadGitFile() {
+			string[] gitIgnore;
 
-				m_Dir = m_FolderSelect.FileName;
-
-				m_DirFolderCount = m_Dir.Split('\\').Length;
-
-				label1.Text = m_Dir + "\\";
-
-				string[] gitIgnore;
-
-				try {
-					gitIgnore = File.ReadAllLines(m_Dir + "\\.gitignore");
-				} catch {
-					label1.Text = "Folder does not have .gitignore";
-					return;
-				}
-
-				m_GitLines = new GitIgnoreLine[gitIgnore.Length];
-
-				for (int i = 0; i < m_GitLines.Length; i++) {
-					m_GitLines[i] = new GitIgnoreLine(gitIgnore[i], i);
-					GitIgnore_Contents.Items.Add(i.ToString() + ":\t" + m_GitLines[i].m_BaseLine);
-					//if (m_GitIgnore[i].Length >= 2) {
-					//	if (m_GitIgnore[i][0] == '/') {
-					//		m_GitIgnore[i] = m_GitIgnore[i].Remove(0, 1);
-					//	}
-					//}
-				}
-
-				setUpFolderList();
-
-				//addFolders("", null);
-				//addFiles("", null);
+			try {
+				gitIgnore = File.ReadAllLines(m_Dir + "\\.gitignore");
+			} catch {
+				Label_CurrPath.Text = "Folder does not have .gitignore";
+				return false;
 			}
+
+			m_GitLines = new List<GitIgnoreLine>();
+			m_GitLines.Capacity = gitIgnore.Length;
+
+			for (int i = 0; i < gitIgnore.Length; i++) {
+				GitIgnoreLine gil = new GitIgnoreLine();
+
+				gil.setLine(gitIgnore[i]);
+
+				m_GitLines.Add(gil);
+				//if (m_GitIgnore[i].Length >= 2) {
+				//	if (m_GitIgnore[i][0] == '/') {
+				//		m_GitIgnore[i] = m_GitIgnore[i].Remove(0, 1);
+				//	}
+				//}
+			}
+
+			return true;
 		}
 
 		private void setUpFolderList() {
-
-
-
 			m_Base = new FileFolderHolder();
 			m_Base.m_Children = new List<FileFolderHolder>();
 			m_Base.m_Path = m_Dir;
@@ -154,7 +145,7 @@ namespace Git_Ignore_Editor {
 			//check git ignore
 			runThroughGit(m_Base);
 			//run through strikeout
-			updateTreeExclude(m_Base);
+			updateTreeExludeStrikeout(m_Base);
 		}
 
 		private void addFolders(FileFolderHolder a_Node) {
@@ -178,7 +169,7 @@ namespace Git_Ignore_Editor {
 
 				folder.m_RelativePath = "";
 
-				for (int q = m_DirFolderCount; q < folderSlit.Length-1; q++) {
+				for (int q = m_DirFolderCount; q < folderSlit.Length - 1; q++) {
 					folder.m_RelativePath += folderSlit[q] + "\\";
 				}
 
@@ -218,7 +209,7 @@ namespace Git_Ignore_Editor {
 
 				file.m_RelativePath = "";
 
-				for (int q = m_DirFolderCount; q < folderSlit.Length-1; q++) {
+				for (int q = m_DirFolderCount; q < folderSlit.Length - 1; q++) {
 					file.m_RelativePath += folderSlit[q] + "\\";
 				}
 
@@ -266,11 +257,11 @@ namespace Git_Ignore_Editor {
 					}
 					string dir = prefix + current.m_RelativePath.Replace('\\', '/');
 
-					dir += current.m_Filename + "/";
+					dir += current.m_Filename;
 
-					if (dir.Length >= 1) {
-						dir = dir.Remove(dir.Length - 1);
-					}
+					//if (dir.Length >= 1) {
+					//	dir = dir.Remove(dir.Length - 1);
+					//}
 
 					dir += suffix;
 
@@ -281,7 +272,7 @@ namespace Git_Ignore_Editor {
 					current.m_Effects = new List<GitIgnoreLine>();
 
 					bool allowed = true;
-					for (int q = 0; q < m_GitLines.Length; q++) {
+					for (int q = 0; q < m_GitLines.Count; q++) {
 						switch (m_GitLines[q].m_Type) {
 							case GitIgnoreLine.LineType.Comment:
 							case GitIgnoreLine.LineType.Empty:
@@ -308,10 +299,10 @@ namespace Git_Ignore_Editor {
 		}
 
 		/// <summary>
-		/// checks if parent objects have been excluded
+		/// checks if parent objects have been excluded ana applied the strikeout
 		/// </summary>
 		/// <param name="a_Ffh"></param>
-		private void updateTreeExclude(FileFolderHolder a_Ffh) {
+		private void updateTreeExludeStrikeout(FileFolderHolder a_Ffh) {
 			for (int i = 0; i < a_Ffh.m_Children.Count; i++) {
 				FileFolderHolder current = a_Ffh.m_Children[i];
 
@@ -322,7 +313,7 @@ namespace Git_Ignore_Editor {
 				}
 
 				if (!current.m_IsFile) {
-					updateTreeExclude(current);
+					updateTreeExludeStrikeout(current);
 				}
 			}
 		}
@@ -336,52 +327,11 @@ namespace Git_Ignore_Editor {
 		/// <returns>node created</returns>
 		private TreeNode addNode(string a_Text, TreeNode a_Parent) {
 			if (a_Parent == null) {
-				return treeView1.Nodes.Add(a_Text);
+				return TreeViewFolders.Nodes.Add(a_Text);
 			}
 			return a_Parent.Nodes.Add(a_Text);
 		}
 
-		private void treeView1_AfterSelect(object sender, TreeViewEventArgs e) {
-			if (m_Base == null) {
-				return;
-			}
-
-			m_RemoveOtherSelectedListBox = false;
-
-			GitIgnore_Contents.ClearSelected();
-			Info_IgnoreList.ClearSelected();
-
-			m_RemoveOtherSelectedListBox = true;
-
-
-			m_Selected = getFfhFromNode(e.Node);
-
-			Info_FileName.Text = m_Selected.m_Filename;
-			Info_RelPath.Text = m_Selected.m_RelativePath;
-			Info_Path.Text = m_Selected.m_Path;
-			Info_IsExcluded.Checked = m_Selected.m_IsExcluded;
-			Info_IsFile.Checked = m_Selected.m_IsFile;
-
-			Info_IgnoreList.Items.Clear();
-
-			if (m_Selected.m_Effects == null || m_Selected.m_Effects.Count == 0) {
-				Info_IgnoreList.Items.Add("Nothing.");
-			} else {
-				for (int i = 0; i < m_Selected.m_Effects.Count; i++) {
-					string text = "";
-					GitIgnoreLine gil = m_Selected.m_Effects[i];
-					if (gil.m_Type == GitIgnoreLine.LineType.Ignore) {
-						text = "Exluded: ";
-					} else {
-						text = "Included: ";
-					}
-
-					text += "L(" + gil.m_LineIndex + "): " + gil.m_BaseLine + "\n";
-
-					Info_IgnoreList.Items.Add(text);
-				}
-			}
-		}
 
 		/// <summary>
 		/// has the chance to not be right, if the data is not the same
@@ -413,6 +363,131 @@ namespace Git_Ignore_Editor {
 			return current;
 		}
 
+		private void remakeGitList() {
+			GitIgnore_Contents.Items.Clear();
+			for (int i = 0; i < m_GitLines.Count; i++) {
+				GitIgnore_Contents.Items.Add(i.ToString() + ":\t" + m_GitLines[i].m_BaseLine);
+				m_GitLines[i].m_LineIndex = i;
+			}
+		}
+
+		private void remakeIgnoreContents() {
+			if (m_Selected == null) {
+				return;
+			}
+
+			Info_FileName.Text = m_Selected.m_Filename;
+			Info_RelPath.Text = m_Selected.m_RelativePath;
+			Info_Path.Text = m_Selected.m_Path;
+			Info_IsExcluded.Checked = m_Selected.m_IsExcluded;
+			Info_IsFile.Checked = m_Selected.m_IsFile;
+
+			Info_IgnoreList.Items.Clear();
+
+			if (m_Selected.m_Effects == null || m_Selected.m_Effects.Count == 0) {
+				Info_IgnoreList.Items.Add("Nothing.");
+			} else {
+				for (int i = 0; i < m_Selected.m_Effects.Count; i++) {
+					string text = "";
+					GitIgnoreLine gil = m_Selected.m_Effects[i];
+					if (gil.m_Type == GitIgnoreLine.LineType.Ignore) {
+						text = "Exluded: ";
+					} else {
+						text = "Included: ";
+					}
+
+					text += "L(" + gil.m_LineIndex + "): " + gil.m_BaseLine + "\n";
+
+					Info_IgnoreList.Items.Add(text);
+				}
+			}
+		}
+
+		public void remakeEverything() {
+			remakeGitList();
+			remakeIgnoreContents();
+
+			runThroughGit(m_Base);
+
+			updateTreeExludeStrikeout(m_Base);
+		}
+
+		private void moveGitIgnoreElement(bool a_MoveUp) {
+			//if not selected
+			if (GitIgnore_Contents.SelectedIndex == -1) {
+				return;
+			}
+			int increment = a_MoveUp ? -1 : 1;
+
+			//if out of bounds
+			if (GitIgnore_Contents.SelectedIndex + increment > GitIgnore_Contents.Items.Count - 1) {
+				return;
+			}
+			if (GitIgnore_Contents.SelectedIndex + increment < 0) {
+				return;
+			}
+
+
+			int index = GitIgnore_Contents.SelectedIndex;
+
+			GitIgnoreLine element = m_GitLines[index];
+			m_GitLines.RemoveAt(index);
+			m_GitLines.Insert(index + increment, element);
+
+			remakeEverything();
+
+			m_RemoveOtherSelectedListBox = false;
+			GitIgnore_Contents.SelectedIndex = index + increment;
+			m_RemoveOtherSelectedListBox = true;
+
+		}
+
+		private void Button_LoadGitIgnore_Click(object sender, EventArgs e) {
+			//folderBrowserDialog1.ShowDialog();
+			bool dr = m_FolderSelect.ShowDialog();
+			if (dr) {
+				m_Base = null;
+				TreeViewFolders.Nodes.Clear();
+				GitIgnore_Contents.Items.Clear();
+
+				m_Dir = m_FolderSelect.FileName;
+
+				m_DirFolderCount = m_Dir.Split('\\').Length;
+
+				Label_CurrPath.Text = m_Dir + "\\";
+
+				if (!loadGitFile()) {
+					return;
+				}
+
+				remakeGitList();
+
+				setUpFolderList();
+
+				//addFolders("", null);
+				//addFiles("", null);
+			}
+		}
+
+		private void TreeViewFolders_AfterSelect(object sender, TreeViewEventArgs e) {
+			if (m_Base == null) {
+				return;
+			}
+
+			m_RemoveOtherSelectedListBox = false;
+
+			GitIgnore_Contents.ClearSelected();
+			Info_IgnoreList.ClearSelected();
+
+			m_RemoveOtherSelectedListBox = true;
+
+
+			m_Selected = getFfhFromNode(e.Node);
+
+			remakeIgnoreContents();
+		}
+
+
 		private void Info_IgnoreList_SelectedIndexChanged(object sender, EventArgs e) {
 			if (!m_RemoveOtherSelectedListBox || Info_IgnoreList.SelectedIndex == -1) {
 				return;
@@ -420,13 +495,19 @@ namespace Git_Ignore_Editor {
 			m_RemoveOtherSelectedListBox = false;
 
 			GitIgnore_Contents.ClearSelected();
-			treeView1.SelectedNode = null;
+			TreeViewFolders.SelectedNode = null;
 
 			m_RemoveOtherSelectedListBox = true;
 
 			if (m_Base == null || m_Selected == null) {
 				return;
 			}
+
+			m_RemoveOtherSelectedListBox = false;
+
+			GitIgnore_Contents.SelectedIndex = m_Selected.m_Effects[Info_IgnoreList.SelectedIndex].m_LineIndex;
+
+			m_RemoveOtherSelectedListBox = true;
 
 
 		}
@@ -438,7 +519,7 @@ namespace Git_Ignore_Editor {
 			m_RemoveOtherSelectedListBox = false;
 
 			Info_IgnoreList.ClearSelected();
-			treeView1.SelectedNode = null;
+			TreeViewFolders.SelectedNode = null;
 
 			m_RemoveOtherSelectedListBox = true;
 
@@ -447,6 +528,66 @@ namespace Git_Ignore_Editor {
 			}
 
 
+		}
+
+		private void Ignore_MoveUp_Click(object sender, EventArgs e) {
+
+			moveGitIgnoreElement(true);
+		}
+
+		private void Ignore_MoveDown_Click(object sender, EventArgs e) {
+
+			moveGitIgnoreElement(false);
+		}
+
+		private void Ignore_RemoveLine_Click(object sender, EventArgs e) {
+			//if not selected
+			if (GitIgnore_Contents.SelectedIndex == -1) {
+				return;
+			}
+
+			int index = GitIgnore_Contents.SelectedIndex;
+
+			m_GitLines.RemoveAt(index);
+
+			remakeEverything();
+
+			m_RemoveOtherSelectedListBox = false;
+			GitIgnore_Contents.SelectedIndex = index - 1;
+			m_RemoveOtherSelectedListBox = true;
+		}
+
+		private void ButtonReload_Click(object sender, EventArgs e) {
+
+			if (!loadGitFile()) {
+				return;
+			}
+
+			remakeEverything();
+		}
+
+		private void Ignore_EditLine_Click(object sender, EventArgs e) {
+			if (GitIgnore_Contents.SelectedIndex == -1) {
+				return;
+			}
+
+			int index = GitIgnore_Contents.SelectedIndex;
+
+			GitIgnoreLine gil = m_GitLines[index];
+
+			string result = m_GitLineEditForm.openForm(gil.m_BaseLine, index);
+
+			if (result == "") {
+				return;
+			}
+
+			gil.setLine(result);
+
+			remakeEverything();
+
+			m_RemoveOtherSelectedListBox = false;
+			GitIgnore_Contents.SelectedIndex = index;
+			m_RemoveOtherSelectedListBox = true;
 		}
 	}
 }
