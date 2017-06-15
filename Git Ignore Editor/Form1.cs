@@ -30,564 +30,680 @@ using Microsoft.VisualBasic.CompilerServices;
 
 namespace Git_Ignore_Editor {
 
-	public partial class Form1 : Form {
-
-		/// <summary>
-		/// handles the folder selecting dialog
-		/// </summary>
-		private FolderSelectDialog m_FolderSelect = new FolderSelectDialog();
-
-		/// <summary>
-		/// form for the line edit
-		/// </summary>
-		private GitLineEditForm m_GitLineEditForm;
-
-		/// <summary>
-		/// normal/default font for the TreeView
-		/// </summary>
-		private Font m_FontNormal;
-		/// <summary>
-		/// strikeout font for the TreeView
-		/// </summary>
-		private Font m_FontStrikeOut;
-
-		/// <summary>
-		/// current path to current folder
-		/// </summary>
-		private string m_Dir;
-		/// <summary>
-		/// how many folders are there between the drive and the current folder
-		/// </summary>
-		private int m_DirFolderCount = 0;
-
-		/// <summary>
-		/// base/state/root of the FileFolderHolder
-		/// </summary>
-		private FileFolderHolder m_Base;
-
-		/// <summary>
-		/// which FileFolderHolder is currently selected
-		/// </summary>
-		private FileFolderHolder m_Selected = null;
-
-		/// <summary>
-		/// list of all the lines in the gitIgnore
-		/// (might have to change to list??)
-		/// </summary>
-		private List<GitIgnoreLine> m_GitLines;
-
-		/// <summary>
-		/// when removing other selected form ListBox's it calls the SelectedIndexChanges, this is a bool that is run first to prevent that
-		/// </summary>
-		private bool m_RemoveOtherSelectedListBox = true;
-
-		public Form1() {
-			InitializeComponent();
-			//ofofd.AcceptFiles = false;
-			//ofofd.RootFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
-			m_GitLineEditForm = new GitLineEditForm(this);
-
-			TreeNode node = TreeViewFolders.Nodes.Add("test");
-			node.Nodes.Add("test1");
-			TreeViewFolders.Nodes.Add("test2");
-			node.Text = "Example";
-			node.Expand();
-
-			Info_FileName.Text = Info_Path.Text = Info_RelPath.Text = "";
-
-			m_FontNormal = new Font(TreeViewFolders.Font, FontStyle.Regular);
-			m_FontStrikeOut = new Font(TreeViewFolders.Font, FontStyle.Strikeout);
-
-			GitIgnore_Contents.Items.Add("Git Ignore File appears here");
-
-		}
-
-		private bool loadGitFile() {
-			string[] gitIgnore;
-
-			try {
-				gitIgnore = File.ReadAllLines(m_Dir + "\\.gitignore");
-			} catch {
-				Label_CurrPath.Text = "Folder does not have .gitignore";
-				return false;
-			}
-
-			m_GitLines = new List<GitIgnoreLine>();
-			m_GitLines.Capacity = gitIgnore.Length;
-
-			for (int i = 0; i < gitIgnore.Length; i++) {
-				GitIgnoreLine gil = new GitIgnoreLine();
+    public partial class Form1 : Form {
+
+        /// <summary>
+        /// handles the folder selecting dialog
+        /// </summary>
+        private FolderSelectDialog m_FolderSelect = new FolderSelectDialog();
+
+        /// <summary>
+        /// form for the line edit
+        /// </summary>
+        private GitLineEditForm m_GitLineEditForm;
+
+        /// <summary>
+        /// normal/default font for the TreeView
+        /// </summary>
+        private Font m_FontNormal;
+        /// <summary>
+        /// strikeout font for the TreeView
+        /// </summary>
+        private Font m_FontStrikeOut;
+
+        /// <summary>
+        /// current path to current folder
+        /// </summary>
+        private string m_Dir;
+        /// <summary>
+        /// how many folders are there between the drive and the current folder
+        /// </summary>
+        private int m_DirFolderCount = 0;
+
+        /// <summary>
+        /// base/state/root of the FileFolderHolder
+        /// </summary>
+        private FileFolderHolder m_Base;
+
+        /// <summary>
+        /// which FileFolderHolder is currently selected
+        /// </summary>
+        private FileFolderHolder m_Selected = null;
+
+        /// <summary>
+        /// list of all the lines in the gitIgnore
+        /// (might have to change to list??)
+        /// </summary>
+        private List<GitIgnoreLine> m_GitLines;
+
+        /// <summary>
+        /// when removing other selected form ListBox's it calls the SelectedIndexChanges, this is a bool that is run first to prevent that
+        /// </summary>
+        private bool m_RemoveOtherSelectedListBox = true;
+
+        public Form1() {
+            InitializeComponent();
+            //ofofd.AcceptFiles = false;
+            //ofofd.RootFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+            m_GitLineEditForm = new GitLineEditForm(this);
+
+            TreeNode node = TreeViewFolders.Nodes.Add("test");
+            node.Nodes.Add("test1");
+            TreeViewFolders.Nodes.Add("test2");
+            node.Text = "Example";
+            node.Expand();
+
+            Info_FileName.Text = Info_Path.Text = Info_RelPath.Text = "";
+
+            m_FontNormal = new Font(TreeViewFolders.Font, FontStyle.Regular);
+            m_FontStrikeOut = new Font(TreeViewFolders.Font, FontStyle.Strikeout);
+
+            GitIgnore_Contents.Items.Add("Git Ignore File appears here");
+
+        }
+
+        private bool loadGitFile() {
+            string[] gitIgnore;
+
+            try {
+                gitIgnore = File.ReadAllLines(m_Dir + "\\.gitignore");
+            } catch {
+                Label_CurrPath.Text = "Folder does not have .gitignore";
+                return false;
+            }
+
+            m_GitLines = new List<GitIgnoreLine>();
+            m_GitLines.Capacity = gitIgnore.Length;
+
+            for (int i = 0; i < gitIgnore.Length; i++) {
+                GitIgnoreLine gil = new GitIgnoreLine();
+
+                gil.setLine(gitIgnore[i]);
+
+                m_GitLines.Add(gil);
+                //if (m_GitIgnore[i].Length >= 2) {
+                //	if (m_GitIgnore[i][0] == '/') {
+                //		m_GitIgnore[i] = m_GitIgnore[i].Remove(0, 1);
+                //	}
+                //}
+            }
 
-				gil.setLine(gitIgnore[i]);
-
-				m_GitLines.Add(gil);
-				//if (m_GitIgnore[i].Length >= 2) {
-				//	if (m_GitIgnore[i][0] == '/') {
-				//		m_GitIgnore[i] = m_GitIgnore[i].Remove(0, 1);
-				//	}
-				//}
-			}
-
-			return true;
-		}
+            //add a empty line to the end
+            if(m_GitLines[m_GitLines.Count -1].m_Type != GitIgnoreLine.LineType.Empty) {
+                GitIgnoreLine gil = new GitIgnoreLine();
 
-		private void setUpFolderList() {
-			m_Base = new FileFolderHolder();
-			m_Base.m_Children = new List<FileFolderHolder>();
-			m_Base.m_Path = m_Dir;
-			m_Base.m_Filename = "";
-			m_Base.m_IsFile = false;
+                gil.setLine("");
 
-			addFolders(m_Base);
-			addFiles(m_Base);
+                m_GitLines.Add(gil);
+            }
 
-			//check git ignore
-			runThroughGit(m_Base);
-			//run through strikeout
-			updateTreeExludeStrikeout(m_Base);
-		}
+            return true;
+        }
 
-		private void addFolders(FileFolderHolder a_Node) {
-			string path = a_Node.m_Path + a_Node.m_Filename;
-			string[] folders = Directory.GetDirectories(path);
+        private void setUpFolderList() {
+            m_Base = new FileFolderHolder();
+            m_Base.m_Children = new List<FileFolderHolder>();
+            m_Base.m_Path = m_Dir;
+            m_Base.m_Filename = "";
+            m_Base.m_IsFile = false;
 
-			for (int i = 0; i < folders.Length; i++) {
-				string[] folderSlit = folders[i].Split('\\');
-				string folderName = folderSlit[folderSlit.Length - 1];
+            addFolders(m_Base);
+            addFiles(m_Base);
 
-				if (folderName == ".git") {
-					continue;
-				}
+            //check git ignore
+            runThroughGit(m_Base);
+            //run through strikeout
+            updateTreeExludeStrikeout(m_Base);
+        }
 
-				FileFolderHolder folder = new FileFolderHolder();
-				folder.m_Children = new List<FileFolderHolder>();
-				folder.m_Path = path + "\\";
-				folder.m_Filename = folderName;
-				folder.m_IsFile = false;
-				folder.m_Parent = a_Node;
+        private void addFolders(FileFolderHolder a_Node) {
+            string path = a_Node.m_Path + a_Node.m_Filename;
+            string[] folders = Directory.GetDirectories(path);
 
-				folder.m_RelativePath = "";
+            for (int i = 0; i < folders.Length; i++) {
+                string[] folderSlit = folders[i].Split('\\');
+                string folderName = folderSlit[folderSlit.Length - 1];
 
-				for (int q = m_DirFolderCount; q < folderSlit.Length - 1; q++) {
-					folder.m_RelativePath += folderSlit[q] + "\\";
-				}
+                if (folderName == ".git") {
+                    continue;
+                }
 
+                FileFolderHolder folder = new FileFolderHolder();
+                folder.m_Children = new List<FileFolderHolder>();
+                folder.m_Path = path + "\\";
+                folder.m_Filename = folderName;
+                folder.m_IsFile = false;
+                folder.m_Parent = a_Node;
 
-				folder.m_Node = addNode(folder.m_Filename, a_Node.m_Node);
+                folder.m_RelativePath = "";
 
-				a_Node.m_Children.Add(folder);
+                for (int q = m_DirFolderCount; q < folderSlit.Length - 1; q++) {
+                    folder.m_RelativePath += folderSlit[q] + "\\";
+                }
 
-				addFolders(folder);
-				addFiles(folder);
 
-			}
-		}
-
-		private void addFiles(FileFolderHolder a_Node) {
-			//parent node is file, files cant have nested files
-			if (a_Node.m_IsFile) {
-				return;
-			}
+                folder.m_Node = addNode(folder.m_Filename, a_Node.m_Node);
 
-			string path = a_Node.m_Path + a_Node.m_Filename;
-			string[] files = Directory.GetFiles(path);
+                a_Node.m_Children.Add(folder);
 
-			for (int i = 0; i < files.Length; i++) {
-				string[] folderSlit = files[i].Split('\\');
-				string fileName = folderSlit[folderSlit.Length - 1];
+                addFolders(folder);
+                addFiles(folder);
 
-				if (fileName == ".gitignore") {
-					continue;
-				}
+            }
+        }
 
-				FileFolderHolder file = new FileFolderHolder();
-				file.m_Path = path + "\\";
-				file.m_Filename = fileName;
-				file.m_IsFile = true;
-				file.m_Parent = a_Node;
+        private void addFiles(FileFolderHolder a_Node) {
+            //parent node is file, files cant have nested files
+            if (a_Node.m_IsFile) {
+                return;
+            }
 
-				file.m_RelativePath = "";
-
-				for (int q = m_DirFolderCount; q < folderSlit.Length - 1; q++) {
-					file.m_RelativePath += folderSlit[q] + "\\";
-				}
-
-				file.m_Node = addNode(file.m_Filename, a_Node.m_Node);
-
-
-				a_Node.m_Children.Add(file);
-
-			}
-		}
-
-		private bool isParentExcluded(FileFolderHolder a_Ffh) {
-			FileFolderHolder parent = a_Ffh.m_Parent;
-
-			while (parent != null) {
-				if (parent.m_IsExcluded) {
-					return true;
-				}
-				parent = parent.m_Parent;
-			}
-
-			return false;
-		}
-
-
-		private void runThroughGit(FileFolderHolder a_Ffh) {
-			for (int i = 0; i < a_Ffh.m_Children.Count; i++) {
-				FileFolderHolder current = a_Ffh.m_Children[i];
-
-				if (isParentExcluded(current)) {
-					current.m_IsExcluded = true;
-				} else {
-
-					string prefix;
-					if (current.m_IsFile) {
-						prefix = "";
-					} else {
-						prefix = "";
-					}
-					string suffix;
-					if (current.m_IsFile) {
-						suffix = "";
-					} else {
-						suffix = "/";
-					}
-					string dir = prefix + current.m_RelativePath.Replace('\\', '/');
-
-					dir += current.m_Filename;
-
-					//if (dir.Length >= 1) {
-					//	dir = dir.Remove(dir.Length - 1);
-					//}
-
-					dir += suffix;
-
-					//if (!isFileAllowed(dir)) {
-					//	current.m_IsExcluded = true;
-					//}
-
-					current.m_Effects = new List<GitIgnoreLine>();
-
-					bool allowed = true;
-					for (int q = 0; q < m_GitLines.Count; q++) {
-						switch (m_GitLines[q].m_Type) {
-							case GitIgnoreLine.LineType.Comment:
-							case GitIgnoreLine.LineType.Empty:
-								break;
-							case GitIgnoreLine.LineType.Allow:
-							case GitIgnoreLine.LineType.Ignore:
-								if (LikeOperator.LikeString(dir, "*" + m_GitLines[q].m_Line, CompareMethod.Binary)) {
-									allowed = m_GitLines[q].m_Type != GitIgnoreLine.LineType.Ignore;
-									current.m_Effects.Add(m_GitLines[q]);
-								}
-								break;
-						}
-					}
-
-					current.m_IsExcluded = !allowed;
-
-
-				}
-
-				if (!current.m_IsFile) {
-					runThroughGit(current);
-				}
-			}
-		}
-
-		/// <summary>
-		/// checks if parent objects have been excluded ana applied the strikeout
-		/// </summary>
-		/// <param name="a_Ffh"></param>
-		private void updateTreeExludeStrikeout(FileFolderHolder a_Ffh) {
-			for (int i = 0; i < a_Ffh.m_Children.Count; i++) {
-				FileFolderHolder current = a_Ffh.m_Children[i];
-
-				if (current.m_IsExcluded) {
-					current.m_Node.NodeFont = m_FontStrikeOut;
-				} else {
-					current.m_Node.NodeFont = m_FontNormal;
-				}
-
-				if (!current.m_IsFile) {
-					updateTreeExludeStrikeout(current);
-				}
-			}
-		}
-
-		/// <summary>
-		/// adds a node to a_Parent,
-		/// if a_Parent is null then it will add to treeView1
-		/// </summary>
-		/// <param name="a_Text">node text</param>
-		/// <param name="a_Parent">parent node</param>
-		/// <returns>node created</returns>
-		private TreeNode addNode(string a_Text, TreeNode a_Parent) {
-			if (a_Parent == null) {
-				return TreeViewFolders.Nodes.Add(a_Text);
-			}
-			return a_Parent.Nodes.Add(a_Text);
-		}
-
-
-		/// <summary>
-		/// has the chance to not be right, if the data is not the same
-		/// </summary>
-		/// <param name="a_Node"></param>
-		/// <returns></returns>
-		private FileFolderHolder getFfhFromNode(TreeNode a_Node) {
-			string[] pathSplit = (a_Node.FullPath).Split('\\');
-			int index = -1;
-			FileFolderHolder current = m_Base;
-
-			//todo change to use a_Node.Index;
-
-			while (current.m_Node != a_Node) {
-				index++;
-				if (index >= pathSplit.Length) {
-					break;
-				}
-				for (int i = 0; i < current.m_Children.Count; i++) {
-					if (pathSplit[index] == current.m_Children[i].m_Filename) {
-						current = current.m_Children[i];
-						break;
-					}
-				}
-
-
-			}
-
-			return current;
-		}
-
-		private void remakeGitList() {
-			GitIgnore_Contents.Items.Clear();
-			for (int i = 0; i < m_GitLines.Count; i++) {
-				GitIgnore_Contents.Items.Add(i.ToString() + ":\t" + m_GitLines[i].m_BaseLine);
-				m_GitLines[i].m_LineIndex = i;
-			}
-		}
-
-		private void remakeIgnoreContents() {
-			if (m_Selected == null) {
-				return;
-			}
-
-			Info_FileName.Text = m_Selected.m_Filename;
-			Info_RelPath.Text = m_Selected.m_RelativePath;
-			Info_Path.Text = m_Selected.m_Path;
-			Info_IsExcluded.Checked = m_Selected.m_IsExcluded;
-			Info_IsFile.Checked = m_Selected.m_IsFile;
-
-			Info_IgnoreList.Items.Clear();
-
-			if (m_Selected.m_Effects == null || m_Selected.m_Effects.Count == 0) {
-				Info_IgnoreList.Items.Add("Nothing.");
-			} else {
-				for (int i = 0; i < m_Selected.m_Effects.Count; i++) {
-					string text = "";
-					GitIgnoreLine gil = m_Selected.m_Effects[i];
-					if (gil.m_Type == GitIgnoreLine.LineType.Ignore) {
-						text = "Exluded: ";
-					} else {
-						text = "Included: ";
-					}
-
-					text += "L(" + gil.m_LineIndex + "): " + gil.m_BaseLine + "\n";
-
-					Info_IgnoreList.Items.Add(text);
-				}
-			}
-		}
-
-		public void remakeEverything() {
-			remakeGitList();
-			remakeIgnoreContents();
-
-			runThroughGit(m_Base);
-
-			updateTreeExludeStrikeout(m_Base);
-		}
+            string path = a_Node.m_Path + a_Node.m_Filename;
+            string[] files = Directory.GetFiles(path);
 
-		private void moveGitIgnoreElement(bool a_MoveUp) {
-			//if not selected
-			if (GitIgnore_Contents.SelectedIndex == -1) {
-				return;
-			}
-			int increment = a_MoveUp ? -1 : 1;
+            for (int i = 0; i < files.Length; i++) {
+                string[] folderSlit = files[i].Split('\\');
+                string fileName = folderSlit[folderSlit.Length - 1];
 
-			//if out of bounds
-			if (GitIgnore_Contents.SelectedIndex + increment > GitIgnore_Contents.Items.Count - 1) {
-				return;
-			}
-			if (GitIgnore_Contents.SelectedIndex + increment < 0) {
-				return;
-			}
+                if (fileName == ".gitignore") {
+                    continue;
+                }
 
+                FileFolderHolder file = new FileFolderHolder();
+                file.m_Path = path + "\\";
+                file.m_Filename = fileName;
+                file.m_IsFile = true;
+                file.m_Parent = a_Node;
 
-			int index = GitIgnore_Contents.SelectedIndex;
+                file.m_RelativePath = "";
 
-			GitIgnoreLine element = m_GitLines[index];
-			m_GitLines.RemoveAt(index);
-			m_GitLines.Insert(index + increment, element);
+                for (int q = m_DirFolderCount; q < folderSlit.Length - 1; q++) {
+                    file.m_RelativePath += folderSlit[q] + "\\";
+                }
 
-			remakeEverything();
+                file.m_Node = addNode(file.m_Filename, a_Node.m_Node);
+
+
+                a_Node.m_Children.Add(file);
+
+            }
+        }
+
+        private bool isParentExcluded(FileFolderHolder a_Ffh) {
+            FileFolderHolder parent = a_Ffh.m_Parent;
+
+            while (parent != null) {
+                if (parent.m_IsExcluded) {
+                    return true;
+                }
+                parent = parent.m_Parent;
+            }
+
+            return false;
+        }
+
+
+        private void runThroughGit(FileFolderHolder a_Ffh) {
+            for (int i = 0; i < a_Ffh.m_Children.Count; i++) {
+                FileFolderHolder current = a_Ffh.m_Children[i];
+
+                if (isParentExcluded(current)) {
+                    current.m_IsExcluded = true;
+                } else {
+
+                    string prefix;
+                    if (current.m_IsFile) {
+                        prefix = "";
+                    } else {
+                        prefix = "";
+                    }
+                    string suffix;
+                    if (current.m_IsFile) {
+                        suffix = "";
+                    } else {
+                        suffix = "/";
+                    }
+                    string dir = prefix + current.m_RelativePath.Replace('\\', '/');
+
+                    dir += current.m_Filename;
+
+                    //if (dir.Length >= 1) {
+                    //	dir = dir.Remove(dir.Length - 1);
+                    //}
+
+                    dir += suffix;
+
+                    //if (!isFileAllowed(dir)) {
+                    //	current.m_IsExcluded = true;
+                    //}
+
+                    current.m_Effects = new List<GitIgnoreLine>();
+
+                    bool allowed = true;
+                    for (int q = 0; q < m_GitLines.Count; q++) {
+                        switch (m_GitLines[q].m_Type) {
+                            case GitIgnoreLine.LineType.Comment:
+                            case GitIgnoreLine.LineType.Empty:
+                                break;
+                            case GitIgnoreLine.LineType.Allow:
+                            case GitIgnoreLine.LineType.Ignore:
+                                if (LikeOperator.LikeString(dir, "*" + m_GitLines[q].m_Line, CompareMethod.Binary)) {
+                                    allowed = m_GitLines[q].m_Type != GitIgnoreLine.LineType.Ignore;
+                                    current.m_Effects.Add(m_GitLines[q]);
+                                }
+                                break;
+                        }
+                    }
+
+                    current.m_IsExcluded = !allowed;
+
+
+                }
+
+                if (!current.m_IsFile) {
+                    runThroughGit(current);
+                }
+            }
+        }
+
+        /// <summary>
+        /// checks if parent objects have been excluded ana applied the strikeout
+        /// </summary>
+        /// <param name="a_Ffh"></param>
+        private void updateTreeExludeStrikeout(FileFolderHolder a_Ffh) {
+            for (int i = 0; i < a_Ffh.m_Children.Count; i++) {
+                FileFolderHolder current = a_Ffh.m_Children[i];
+
+                if (current.m_IsExcluded) {
+                    current.m_Node.NodeFont = m_FontStrikeOut;
+                } else {
+                    current.m_Node.NodeFont = m_FontNormal;
+                }
+
+                if (!current.m_IsFile) {
+                    updateTreeExludeStrikeout(current);
+                }
+            }
+        }
+
+        /// <summary>
+        /// adds a node to a_Parent,
+        /// if a_Parent is null then it will add to treeView1
+        /// </summary>
+        /// <param name="a_Text">node text</param>
+        /// <param name="a_Parent">parent node</param>
+        /// <returns>node created</returns>
+        private TreeNode addNode(string a_Text, TreeNode a_Parent) {
+            if (a_Parent == null) {
+                return TreeViewFolders.Nodes.Add(a_Text);
+            }
+            return a_Parent.Nodes.Add(a_Text);
+        }
+
+
+        /// <summary>
+        /// has the chance to not be right, if the data is not the same
+        /// </summary>
+        /// <param name="a_Node"></param>
+        /// <returns></returns>
+        private FileFolderHolder getFfhFromNode(TreeNode a_Node) {
+            if(a_Node == null) {
+                return null;
+            }
+            string[] pathSplit = (a_Node.FullPath).Split('\\');
+            int index = -1;
+            FileFolderHolder current = m_Base;
+
+            //todo change to use a_Node.Index;
+
+            while (current.m_Node != a_Node) {
+                index++;
+                if (index >= pathSplit.Length) {
+                    break;
+                }
+                for (int i = 0; i < current.m_Children.Count; i++) {
+                    if (pathSplit[index] == current.m_Children[i].m_Filename) {
+                        current = current.m_Children[i];
+                        break;
+                    }
+                }
+
+
+            }
+
+            return current;
+        }
+
+        private void remakeGitList() {
+            GitIgnore_Contents.Items.Clear();
+            for (int i = 0; i < m_GitLines.Count; i++) {
+                GitIgnore_Contents.Items.Add(i.ToString() + ":\t" + m_GitLines[i].m_BaseLine);
+                m_GitLines[i].m_LineIndex = i;
+            }
+        }
+
+        private void remakeIgnoreContents() {
+            if (m_Selected == null) {
+                return;
+            }
+
+            Info_FileName.Text = m_Selected.m_Filename;
+            Info_RelPath.Text = m_Selected.m_RelativePath;
+            Info_Path.Text = m_Selected.m_Path;
+            Info_IsExcluded.Checked = m_Selected.m_IsExcluded;
+            Info_IsFile.Checked = m_Selected.m_IsFile;
+
+            Info_IgnoreList.Items.Clear();
+
+            if (m_Selected.m_Effects == null || m_Selected.m_Effects.Count == 0) {
+                Info_IgnoreList.Items.Add("Nothing.");
+            } else {
+                for (int i = 0; i < m_Selected.m_Effects.Count; i++) {
+                    string text = "";
+                    GitIgnoreLine gil = m_Selected.m_Effects[i];
+                    if (gil.m_Type == GitIgnoreLine.LineType.Ignore) {
+                        text = "Exluded: ";
+                    } else if (gil.m_Type == GitIgnoreLine.LineType.Allow) {
+                        text = "Included: ";
+                    } else {
+                        text = "";
+                        break;
+                    }
+
+                    text += "L(" + gil.m_LineIndex + "): " + gil.m_BaseLine + "\n";
+
+                    Info_IgnoreList.Items.Add(text);
+                }
+            }
+        }
+
+        public void remakeEverything() {
+            remakeGitList();
+            runThroughGit(m_Base);
+
+            remakeIgnoreContents();
+
+            updateTreeExludeStrikeout(m_Base);
+        }
+
+        private void moveGitIgnoreElement(bool a_MoveUp) {
+            //if not selected
+            if (GitIgnore_Contents.SelectedIndex == -1) {
+                return;
+            }
+            int increment = a_MoveUp ? -1 : 1;
+
+            //if out of bounds
+            if (GitIgnore_Contents.SelectedIndex + increment > GitIgnore_Contents.Items.Count - 1) {
+                return;
+            }
+            if (GitIgnore_Contents.SelectedIndex + increment < 0) {
+                return;
+            }
+
+
+            int index = GitIgnore_Contents.SelectedIndex;
+
+            GitIgnoreLine element = m_GitLines[index];
+            m_GitLines.RemoveAt(index);
+            m_GitLines.Insert(index + increment, element);
+
+            remakeEverything();
+
+            m_RemoveOtherSelectedListBox = false;
+            GitIgnore_Contents.SelectedIndex = index + increment;
+            m_RemoveOtherSelectedListBox = true;
 
-			m_RemoveOtherSelectedListBox = false;
-			GitIgnore_Contents.SelectedIndex = index + increment;
-			m_RemoveOtherSelectedListBox = true;
+        }
+
+        private void loadFolder() {
+            m_Base = null;
+            TreeViewFolders.Nodes.Clear();
+            GitIgnore_Contents.Items.Clear();            
+
+
+            if (!loadGitFile()) {
+                return;
+            }
 
-		}
+            remakeGitList();
+
+            setUpFolderList();
 
-		private void Button_LoadGitIgnore_Click(object sender, EventArgs e) {
-			//folderBrowserDialog1.ShowDialog();
-			bool dr = m_FolderSelect.ShowDialog();
-			if (dr) {
-				m_Base = null;
-				TreeViewFolders.Nodes.Clear();
-				GitIgnore_Contents.Items.Clear();
+            //addFolders("", null);
+            //addFiles("", null);
+        }
 
-				m_Dir = m_FolderSelect.FileName;
+        private void saveGitIgnore() {
+            if(m_Base == null) {
+                return;
+            }
 
-				m_DirFolderCount = m_Dir.Split('\\').Length;
+            string gitIgnore = "";
 
-				Label_CurrPath.Text = m_Dir + "\\";
+            for(int i = 0; i < m_GitLines.Count; i++) {
+                if (i != 0) {
+                    gitIgnore += "\n";
+                }
+                gitIgnore += m_GitLines[i].m_BaseLine;
+            }
+            //add ending line if it's not empty
+            if(m_GitLines[m_GitLines.Count-1].m_Type != GitIgnoreLine.LineType.Empty) {
+                gitIgnore += "\n";
+            }
 
-				if (!loadGitFile()) {
-					return;
-				}
+            //write to file
+            File.WriteAllText(m_Dir + "\\.gitignore", gitIgnore);
 
-				remakeGitList();
+        }
 
-				setUpFolderList();
+        private void Button_LoadGitIgnore_Click(object sender, EventArgs e) {
+            //folderBrowserDialog1.ShowDialog();
+            bool dr = m_FolderSelect.ShowDialog();
+            if (dr) {
 
-				//addFolders("", null);
-				//addFiles("", null);
-			}
-		}
+                m_Dir = m_FolderSelect.FileName;
+                m_DirFolderCount = m_Dir.Split('\\').Length;
+                Label_CurrPath.Text = m_Dir + "\\";
 
-		private void TreeViewFolders_AfterSelect(object sender, TreeViewEventArgs e) {
-			if (m_Base == null) {
-				return;
-			}
+                loadFolder();
+            }
+        }
 
-			m_RemoveOtherSelectedListBox = false;
+        private void TreeViewFolders_AfterSelect(object sender, TreeViewEventArgs e) {
+            if (m_Base == null) {
+                return;
+            }
 
-			GitIgnore_Contents.ClearSelected();
-			Info_IgnoreList.ClearSelected();
+            m_RemoveOtherSelectedListBox = false;
 
-			m_RemoveOtherSelectedListBox = true;
+            GitIgnore_Contents.ClearSelected();
+            Info_IgnoreList.ClearSelected();
 
+            m_RemoveOtherSelectedListBox = true;
 
-			m_Selected = getFfhFromNode(e.Node);
 
-			remakeIgnoreContents();
-		}
+            m_Selected = getFfhFromNode(e.Node);
 
+            remakeIgnoreContents();
+        }
 
-		private void Info_IgnoreList_SelectedIndexChanged(object sender, EventArgs e) {
-			if (!m_RemoveOtherSelectedListBox || Info_IgnoreList.SelectedIndex == -1) {
-				return;
-			}
-			m_RemoveOtherSelectedListBox = false;
 
-			GitIgnore_Contents.ClearSelected();
-			TreeViewFolders.SelectedNode = null;
+        private void Info_IgnoreList_SelectedIndexChanged(object sender, EventArgs e) {
+            if (!m_RemoveOtherSelectedListBox || Info_IgnoreList.SelectedIndex == -1) {
+                return;
+            }
+            m_RemoveOtherSelectedListBox = false;
 
-			m_RemoveOtherSelectedListBox = true;
+            GitIgnore_Contents.ClearSelected();
+            TreeViewFolders.SelectedNode = null;
 
-			if (m_Base == null || m_Selected == null) {
-				return;
-			}
+            m_RemoveOtherSelectedListBox = true;
 
-			m_RemoveOtherSelectedListBox = false;
+            if (m_Base == null || m_Selected == null) {
+                return;
+            }
 
-			GitIgnore_Contents.SelectedIndex = m_Selected.m_Effects[Info_IgnoreList.SelectedIndex].m_LineIndex;
+            m_RemoveOtherSelectedListBox = false;
 
-			m_RemoveOtherSelectedListBox = true;
+            GitIgnore_Contents.SelectedIndex = m_Selected.m_Effects[Info_IgnoreList.SelectedIndex].m_LineIndex;
 
+            m_RemoveOtherSelectedListBox = true;
 
-		}
 
-		private void GitIgnore_Contents_SelectedIndexChanged(object sender, EventArgs e) {
-			if (!m_RemoveOtherSelectedListBox || GitIgnore_Contents.SelectedIndex == -1) {
-				return;
-			}
-			m_RemoveOtherSelectedListBox = false;
+        }
 
-			Info_IgnoreList.ClearSelected();
-			TreeViewFolders.SelectedNode = null;
+        private void GitIgnore_Contents_SelectedIndexChanged(object sender, EventArgs e) {
+            if (!m_RemoveOtherSelectedListBox || GitIgnore_Contents.SelectedIndex == -1) {
+                return;
+            }
+            m_RemoveOtherSelectedListBox = false;
 
-			m_RemoveOtherSelectedListBox = true;
+            Info_IgnoreList.ClearSelected();
+            TreeViewFolders.SelectedNode = null;
 
-			if (m_Base == null) {
-				return;
-			}
+            m_RemoveOtherSelectedListBox = true;
 
+            if (m_Base == null) {
+                return;
+            }
 
-		}
 
-		private void Ignore_MoveUp_Click(object sender, EventArgs e) {
+        }
 
-			moveGitIgnoreElement(true);
-		}
+        private void Ignore_MoveUp_Click(object sender, EventArgs e) {
 
-		private void Ignore_MoveDown_Click(object sender, EventArgs e) {
+            moveGitIgnoreElement(true);
+        }
 
-			moveGitIgnoreElement(false);
-		}
+        private void Ignore_MoveDown_Click(object sender, EventArgs e) {
 
-		private void Ignore_RemoveLine_Click(object sender, EventArgs e) {
-			//if not selected
-			if (GitIgnore_Contents.SelectedIndex == -1) {
-				return;
-			}
+            moveGitIgnoreElement(false);
+        }
 
-			int index = GitIgnore_Contents.SelectedIndex;
+        private void Ignore_RemoveLine_Click(object sender, EventArgs e) {
+            //if not selected
+            if (GitIgnore_Contents.SelectedIndex == -1) {
+                return;
+            }
 
-			m_GitLines.RemoveAt(index);
+            int index = GitIgnore_Contents.SelectedIndex;
 
-			remakeEverything();
+            m_GitLines.RemoveAt(index);
 
-			m_RemoveOtherSelectedListBox = false;
-			GitIgnore_Contents.SelectedIndex = index - 1;
-			m_RemoveOtherSelectedListBox = true;
-		}
+            remakeEverything();
 
-		private void ButtonReload_Click(object sender, EventArgs e) {
+            m_RemoveOtherSelectedListBox = false;
+            GitIgnore_Contents.SelectedIndex = index - 1;
+            m_RemoveOtherSelectedListBox = true;
+        }
 
-			if (!loadGitFile()) {
-				return;
-			}
+        private void ButtonReload_Click(object sender, EventArgs e) {
 
-			remakeEverything();
-		}
+            if (!loadGitFile()) {
+                return;
+            }
 
-		private void Ignore_EditLine_Click(object sender, EventArgs e) {
-			if (GitIgnore_Contents.SelectedIndex == -1) {
-				return;
-			}
+            loadFolder();
+        }
 
-			int index = GitIgnore_Contents.SelectedIndex;
+        private void Ignore_EditLine_Click(object sender, EventArgs e) {
+            if (GitIgnore_Contents.SelectedIndex == -1) {
+                return;
+            }
 
-			GitIgnoreLine gil = m_GitLines[index];
+            int index = GitIgnore_Contents.SelectedIndex;
 
-			string result = m_GitLineEditForm.openForm(gil.m_BaseLine, index);
+            GitIgnoreLine gil = m_GitLines[index];
 
-			if (result == "") {
-				return;
-			}
+            string result = m_GitLineEditForm.openForm(gil.m_BaseLine, index);
 
-			gil.setLine(result);
+            if (result == "") {
+                return;
+            }
 
-			remakeEverything();
+            gil.setLine(result);
 
-			m_RemoveOtherSelectedListBox = false;
-			GitIgnore_Contents.SelectedIndex = index;
-			m_RemoveOtherSelectedListBox = true;
-		}
-	}
+            remakeEverything();
+
+            m_RemoveOtherSelectedListBox = false;
+            GitIgnore_Contents.SelectedIndex = index;
+            m_RemoveOtherSelectedListBox = true;
+        }
+
+        private void Ignore_NewLine_Click(object sender, EventArgs e) {
+            //if not selected
+            if (GitIgnore_Contents.SelectedIndex == -1) {
+                return;
+            }
+
+            int index = GitIgnore_Contents.SelectedIndex;
+
+            GitIgnoreLine gil = new GitIgnoreLine();
+            gil.setLine("");
+
+            m_GitLines.Insert(index,gil);
+
+            remakeEverything();
+
+            m_RemoveOtherSelectedListBox = false;
+            GitIgnore_Contents.SelectedIndex = index;
+            m_RemoveOtherSelectedListBox = true;
+        }
+
+        private void Button_Ignore_Click(object sender, EventArgs e) {
+            if(m_Base == null) {
+                return;
+            }
+
+            FileFolderHolder ffh = getFfhFromNode(TreeViewFolders.SelectedNode);
+            if(ffh == null) {
+                return;
+            }
+            string text = "";
+            text += ffh.m_RelativePath + ffh.m_Filename;
+
+            if (!ffh.m_IsFile) {
+                text += "/";
+            }
+
+            GitIgnoreLine gil = new GitIgnoreLine();
+
+            gil.setLine(text);
+
+            m_GitLines.Add(gil);
+
+            remakeEverything();
+        }
+
+        private void Button_Allow_Click(object sender, EventArgs e) {
+            if (m_Base == null) {
+                return;
+            }
+
+            FileFolderHolder ffh = getFfhFromNode(TreeViewFolders.SelectedNode);
+            if (ffh == null) {
+                return;
+            }
+            string text = "!";
+            text += ffh.m_RelativePath + ffh.m_Filename;
+
+            if (!ffh.m_IsFile) {
+                text += "/";
+            }
+
+            GitIgnoreLine gil = new GitIgnoreLine();
+
+            gil.setLine(text);
+
+            m_GitLines.Add(gil);
+
+            remakeEverything();
+        }
+
+        private void ButtonSave_Click(object sender, EventArgs e) {
+            saveGitIgnore();
+        }
+    }
 }
