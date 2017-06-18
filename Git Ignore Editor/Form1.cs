@@ -595,7 +595,10 @@ namespace Git_Ignore_Editor {
             remakeEverything();
 
             m_RemoveOtherSelectedListBox = false;
-            GitIgnore_Contents.SelectedIndex = index - 1;
+			if(index == GitIgnore_Contents.Items.Count) {
+				index--;
+			}
+            GitIgnore_Contents.SelectedIndex = index;
             m_RemoveOtherSelectedListBox = true;
         }
 
@@ -670,7 +673,7 @@ namespace Git_Ignore_Editor {
 
             GitIgnoreLine gil = new GitIgnoreLine();
 
-            gil.setLine(text);
+            gil.setLine(text.Replace('\\','/'));
 
             m_GitLines.Add(gil);
 
@@ -695,9 +698,9 @@ namespace Git_Ignore_Editor {
 
             GitIgnoreLine gil = new GitIgnoreLine();
 
-            gil.setLine(text);
+            gil.setLine(text.Replace('\\', '/'));
 
-            m_GitLines.Add(gil);
+			m_GitLines.Add(gil);
 
             remakeEverything();
         }
